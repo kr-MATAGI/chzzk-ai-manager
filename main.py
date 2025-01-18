@@ -9,6 +9,7 @@ if __name__ == "__main__":
 
     agent = ChzzkAgent(llm_model="gpt-4o")
     agent.build_graph()
-    answer = agent.invoke_graph(
-        question="What is the capital of France?"
-    )
+    agent.show_graph()
+    # answer = agent.invoke_graph(
+    #     question="What is the capital of France?"
+    # )

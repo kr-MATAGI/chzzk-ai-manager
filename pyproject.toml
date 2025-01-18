@@ -12,6 +12,10 @@ langchain = "^0.3.14"
 langgraph = "^0.2.64"
 python-dotenv = "^1.0.1"
 langchain-openai = "^0.3.0"
+ipython = "^8.31.0"
+graphviz = "^0.20.3"
+pillow = "^11.1.0"
+matplotlib = "^3.10.0"
 
 
 [build-system]

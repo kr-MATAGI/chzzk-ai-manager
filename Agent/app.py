@@ -6,6 +6,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langchain_openai import ChatOpenAI
 
 from Utils.logger import LangLogger, set_langsmith
+from Utils.grpah_viewer import show_graph_flow
 from Agent.state import BasicState
 
 class ChzzkAgent:
@@ -46,6 +47,7 @@ class ChzzkAgent:
                 if "messages" in value:
                     self._logger.debug(value["messages"])
 
+
     def build_graph(
         self,
         tools: List[Any] = []
@@ -68,6 +70,10 @@ class ChzzkAgent:
         # Build Graph
         # memory = MemorySaver()
         self._graph = self._graph_flow.compile()
+
+    
+    def show_graph(self):
+        show_graph_flow(self._graph)
 
 
     def _user_question(
