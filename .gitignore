@@ -1,0 +1,33 @@
+# 파일
+.DS_Store
+*.env
+# *.db
+*.pdf
+*.pkl
+*.md
+*.gguf
+*.faiss
+*.index
+*.sqlite3
+*.bin
+*.wav
+
+.idea/
+.vscode/
+
+# 폴더
+*/cache/*
+*/keys/*
+*/working/*
+*/convert/*
+*/convert2/*
+*/unuse/*
+*/corpus/*
+*/mlruns/*
+working/
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
