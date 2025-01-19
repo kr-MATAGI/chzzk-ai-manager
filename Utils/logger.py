@@ -10,7 +10,7 @@ class LangLogger:
         self._logger = logging.getLogger(logger_name)
         self._logger.setLevel(log_level)
         self._log_fmt = logging.Formatter(
-            fmt="[%(asctime)s][%(filename)s/%(lineno)s][%(levelname)s]: %(message)s",
+            fmt="[%(asctime)s][{}][%(filename)s/%(lineno)s][%(levelname)s]: %(message)s".format(logger_name),
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 
