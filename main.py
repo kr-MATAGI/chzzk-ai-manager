@@ -17,6 +17,6 @@ if __name__ == "__main__":
     # # )
 
     chat = ChatCrawler()
-    a = chat.crawl_live_chat(target_user="강퀴88")
+    a = chat.crawl_live_chat(target_user="정유영")
 
     time.sleep(10)

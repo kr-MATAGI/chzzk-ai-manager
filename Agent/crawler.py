@@ -2,6 +2,7 @@ import requests
 import random
 import time
 from typing import Any, List, Dict
+from datetime import datetime
 
 from Utils.logger import LangLogger
 from Agent.headers import CHROME_HEADERS
@@ -49,21 +50,54 @@ class ChatCrawler:
 
         
         # Crawl live chatting
-        time.sleep(5) # Loading
+        time.sleep(3) # Loading
+        # live_chatting_list_wrapper__a5XTV
         chatting_list_wrapper: WebElement = self.driver.find_element(
             By.XPATH,
             "//div[contains(@class, 'live_chatting_list_wrapper')]"
         )
+        self._logger.debug(f"Chatting list wrapper: {True if chatting_list_wrapper else False}")
+
+        # Get chatting after open browser
+        chat_log_history: Dict = {}
 
         chat_list_items: List[WebElement] = chatting_list_wrapper.find_elements(
             By.XPATH, 
-            "//*[contains(@class, 'live_chatting_list_item')]"
+            ".//div[contains(@class, 'live_chatting_list_item')]"
         )
-
-        chat_log: Dict = {}
-    
-        print(len(chat_list_items))
+        self._logger.debug(f"First Chat Size: {len(chat_list_items)}")
         
+        for chat_item in chat_list_items:
+            # name_ellipsis__Hu9B+->name_text__yQG50, live_chatting_message_text__DyleH
+            
+            try:
+                user_nick_name_elem: WebElement = chat_item.find_element(
+                    By.XPATH,
+                    ".//span[contains(@class, 'name_text')]"
+                )
+                user_chat_elem: WebElement = chat_item.find_element(
+                    By.XPATH,
+                    ".//span[contains(@class, 'live_chatting_message_text')]"
+                )
+
+                if user_nick_name_elem.text in chat_log_history.keys():
+                    chat_log_history[user_nick_name_elem.text].append({
+                        "content": user_chat_elem.text,
+                        "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
+                    })
+                else:
+                    chat_log_history[user_nick_name_elem.text] = [{
+                        "content": user_chat_elem.text,
+                        "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
+                    }]
+
+            except Exception as e:
+                if user_nick_name_elem:
+                    self._logger.error(f"User: {user_nick_name_elem.text}, {e}")
+            
+        # Test
+        # for k, v in chat_log_history.items():
+        #     print(f"{k}:\n{v}\n\n")
 
     def _open_website(
         self,
