@@ -70,15 +70,9 @@ class ChatCrawler:
                             continue
 
                         total_chat_history[live_user].append(chat)
-
-                        # TEST
-                        print(f"Extend\n{live_user}, {chat}")
                 else:
                     # 새롭게 유입된 유저
                     total_chat_history[live_user] = live_chat_list
-
-                    # TEST
-                    print(f"New\n{live_user}, {live_chat_list}")
         
 
     def _open_website(

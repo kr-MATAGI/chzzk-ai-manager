@@ -19,6 +19,7 @@ matplotlib = "^3.10.0"
 selenium = "^4.27.1"
 bs4 = "^0.0.2"
 webdriver-manager = "^4.0.2"
+psycopg2-binary = "^2.9.10"
 
 
 [build-system]
