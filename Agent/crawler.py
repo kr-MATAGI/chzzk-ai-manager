@@ -1,12 +1,15 @@
 import requests
 import random
 import time
+import os
 from typing import Any, List, Dict
 from datetime import datetime
+from dotenv import load_dotenv
 
 from Utils.logger import LangLogger
 from Agent.headers import CHROME_HEADERS
-
+from Agent.db_helper import DB_Helper
+from Agent.broker import Broker
 
 
 import selenium
@@ -23,13 +26,30 @@ class ChatCrawler:
     def __init__(
         self,
     ):
+        load_dotenv()
         self._logger = LangLogger("ChatCrawler")
         self._logger.debug(f"Selenium Version: {selenium.__version__}")
 
-        # Set Driver
+        # Set Web Driver
         self.driver = webdriver.Chrome(
             service=ChromeService(ChromeDriverManager().install())
         )
+
+        # DB
+        self.db_helper = DB_Helper(
+            database=os.environ["POSTGRES_DB_NAME"],
+            host=os.environ["POSTGRES_HOST"],
+            user=os.environ["POSTGRES_USER"],
+            password=os.environ["POSTGRES_PWD"],
+        )
+        self.db_helper.connection()
+
+        # Broker
+        self.broker = Broker(
+            host=os.environ["REDIS_HOST"],
+            port=os.environ["REDIS_PORT"],
+        )
+        self.broker.connection()
 
 
     def crawl_live_chat(
@@ -48,7 +68,6 @@ class ChatCrawler:
         live_url: str = f'https://chzzk.naver.com/live/{streamer_info["channel_id"]}'
         self._open_website(url=live_url)
 
-        
         # Crawl live chatting
         time.sleep(3) # Loading
         total_chat_history: Dict[str, List[Dict]] = self._crawling_chatting()

@@ -1,5 +1,4 @@
-import asyncio
-import aioredis
+import redis.asyncio as redis
 from typing import Any
 
 from Utils.logger import LangLogger
@@ -8,15 +7,25 @@ from Utils.logger import LangLogger
 class Broker:
     def __init__(
         self,
-        host: str
+        host: str,
+        port: str,
     ):
         self._logger = LangLogger("Broker")
         self._host: str = host
+        self._port: str = port
         self._conn: Any = None
     
     
-    async def connection(self):
-        self._conn = await aioredis.from_url(self._host)
+    def connection(self):
+        try:
+            self._conn = redis.Redis(
+                host=self._host,
+                port=self._port,
+                decode_responses=True,
+            )
+            self._logger.debug("Connected")
+        except Exception as e:
+            self._logger.error(f"[ERROR] Redis Connection Failed, {e or e.__class__.__name__}")
 
     
     async def release(self):
