@@ -19,7 +19,7 @@ class DB_Helper:
         self._host: str = host
         self._port: str = port
         
-        self._logger: Any = LangLogger("DB_Helper")
+        self._logger = LangLogger("DB_Helper")
         self._conn: Any = None 
 
     def connection(self):
