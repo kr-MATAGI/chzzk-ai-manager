@@ -2,6 +2,7 @@ import requests
 import random
 import time
 import os
+import uuid
 from typing import Any, List, Dict
 from datetime import datetime
 from dotenv import load_dotenv
@@ -10,7 +11,7 @@ from Utils.logger import LangLogger
 from Agent.headers import CHROME_HEADERS
 from Agent.db_helper import DB_Helper
 from Agent.broker import Broker
-
+from Agent.query import DB_Query
 
 import selenium
 from selenium import webdriver
@@ -42,17 +43,20 @@ class ChatCrawler:
             user=os.environ["POSTGRES_USER"],
             password=os.environ["POSTGRES_PWD"],
         )
-        self.db_helper.connection()
 
         # Broker
         self.broker = Broker(
             host=os.environ["REDIS_HOST"],
             port=os.environ["REDIS_PORT"],
         )
-        self.broker.connection()
+
+    
+    async def connection(self):
+        await self.db_helper.connection()
+        await self.broker.connection()
 
 
-    def crawl_live_chat(
+    async def crawl_live_chat(
         self,
         target_user: str,
     ):
@@ -71,6 +75,16 @@ class ChatCrawler:
         # Crawl live chatting
         time.sleep(3) # Loading
         total_chat_history: Dict[str, List[Dict]] = self._crawling_chatting()
+        for live_user, live_chat_list in total_chat_history.items():
+            for chat in live_chat_list:
+                # To Postgres
+                await self.db_helper.execute(
+                    DB_Query.INSERT_CHAT_LOGS.value, 
+                    target_user, live_user, chat["content"], 0,
+                )
+                
+        # To Redis
+        self.broker.set_data(uuid.uuid4(), total_chat_history)
         
         # Live Crawling Loop
         while True:
@@ -89,10 +103,30 @@ class ChatCrawler:
                             continue
 
                         total_chat_history[live_user].append(chat)
+                        
+                        # # To Postgres
+                        # await self.db_helper.execute(
+                        #     DB_Query.INSERT_CHAT_LOGS, (
+                        #         target_user,
+                        #         live_user,
+                        #         chat['content'],
+                        #         0, # @TODO
+                        #     )
+                        # )
                 else:
                     # 새롭게 유입된 유저
                     total_chat_history[live_user] = live_chat_list
-        
+
+                    # # To Postgres
+                    # await self.db_helper.execute(
+                    #     DB_Query.INSERT_CHAT_LOGS, (
+                    #         target_user,
+                    #         live_user,
+                    #         chat['content'],
+                    #         0, # @TODO
+                    #     )
+                    # )
+            
 
     def _open_website(
         self,
@@ -188,18 +222,18 @@ class ChatCrawler:
                 )
 
                 if user_nick_name_elem.text in chat_log_history.keys():
-                    chat_log_history[user_nick_name_elem.text].append({
-                        "content": user_chat_elem.text,
+                    chat_log_history[user_nick_name_elem.text.strip()].append({
+                        "content": user_chat_elem.text.strip(),
                         "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
                     })
                 else:
-                    chat_log_history[user_nick_name_elem.text] = [{
-                        "content": user_chat_elem.text,
+                    chat_log_history[user_nick_name_elem.text.strip()] = [{
+                        "content": user_chat_elem.text.strip(),
                         "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
                     }]
 
             except Exception as e:
                 if user_nick_name_elem:
-                    self._logger.error(f"User: {user_nick_name_elem.text}, {e}")
+                    self._logger.error(f"User: {user_nick_name_elem.text.strip()}, {e}")
 
         return chat_log_history

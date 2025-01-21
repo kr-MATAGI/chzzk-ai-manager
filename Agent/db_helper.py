@@ -1,5 +1,6 @@
-import psycopg2
-from typing import Any
+import asyncio
+import asyncpg
+from typing import Any, List
 
 from Utils.logger import LangLogger
 
@@ -22,9 +23,9 @@ class DB_Helper:
         self._logger = LangLogger("DB_Helper")
         self._conn: Any = None 
 
-    def connection(self):
+    async def connection(self):
         try:
-            self._conn = psycopg2.connect(
+            self._conn = await asyncpg.connect(
                 database=self._database,
                 user=self._user,
                 password=self._password,
@@ -37,12 +38,32 @@ class DB_Helper:
             if self._conn:
                 self._conn.close()
 
-    def release(self):
-        pass
+
+    async def release(self):
+        try:
+            await self._conn.close()
+        except Exception as e:
+            self._logger.error(f"[ERROR] Postgres close.")
 
 
-    def execute(
+    async def execute(
         self,
-        query: str
+        query: str,
+        *data: Any,
     ):
-        pass
+        await self._conn.execute(query, *data)
+
+
+    async def executemany(
+        self,
+        query: str,
+        data: List,
+    ):
+        await self._conn.executemany(query, data)
+
+
+    async def fetch(
+        self,
+        query: str,
+    ):
+        return await self._conn.fetch(query)

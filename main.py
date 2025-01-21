@@ -1,12 +1,13 @@
 import os
 import time
+import asyncio
 from dotenv import load_dotenv
 
 from Agent.app import ChzzkAgent
 from Agent.crawler import ChatCrawler
 
 ### MAIN ###
-if __name__ == "__main__":
+async def main():
     load_dotenv()
 
     # agent = ChzzkAgent(llm_model="gpt-4o")
@@ -17,6 +18,10 @@ if __name__ == "__main__":
     # # )
 
     chat = ChatCrawler()
-    a = chat.crawl_live_chat(target_user="정유영")
+    await chat.connection()
+    await chat.crawl_live_chat(target_user="김호러")
 
     time.sleep(10)
+
+if __name__ == "__main__":
+    asyncio.run(main())

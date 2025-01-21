@@ -16,9 +16,9 @@ class Broker:
         self._conn: Any = None
     
     
-    def connection(self):
+    async def connection(self):
         try:
-            self._conn = redis.Redis(
+            self._conn = await redis.Redis(
                 host=self._host,
                 port=self._port,
                 decode_responses=True,
