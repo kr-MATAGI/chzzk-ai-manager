@@ -84,7 +84,7 @@ class ChatCrawler:
                 )
                 
         # To Redis
-        self.broker.set_data(uuid.uuid4(), total_chat_history)
+        await self.broker.set_data(str(uuid.uuid4()), str(total_chat_history))
         
         # Live Crawling Loop
         while True:

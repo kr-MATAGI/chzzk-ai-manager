@@ -36,13 +36,13 @@ class Broker:
             self._logger.debug(f"Not connected with redis")
 
                 
-    def set_data(
+    async def set_data(
         self,
         key: str,
         data: Any,
         expired_time: int = 3600 # Unit: Sec
     ):
-        pass
+        await self._conn.set(key, data, ex=expired_time)
 
 
     async def get_data(
