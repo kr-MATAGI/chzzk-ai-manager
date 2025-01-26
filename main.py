@@ -9,20 +9,17 @@ from Agent.crawler import ChatCrawler
 async def main():
     load_dotenv()
 
-    agent = ChzzkAgent(llm_model="gpt-4o")
-    agent.build_graph()
-    # agent.show_graph()
+    # agent = ChzzkAgent(llm_model="gpt-4o")
+    # agent.build_graph()
+    # # agent.show_graph()
 
-    answer = agent.invoke_graph(question="탬탬버린의 최근 5개 채팅내역을 보여줘.")
-    print("==" * 20)
-    print(answer)
-    print("==" * 20)
+    # answer = agent.invoke_graph(question="탬탬버린 방송의 채팅에서 가장 많은 채팅을 한 사람은?")
 
-    # chat = ChatCrawler()
-    # await chat.connection()
-    # await chat.crawl_live_chat(target_user="탬탬버린")
+    chat = ChatCrawler()
+    await chat.connection()
+    await chat.crawl_live_chat(target_user="이춘향")
 
-    # time.sleep(10)
+    time.sleep(10)
 
 if __name__ == "__main__":
     asyncio.run(main())

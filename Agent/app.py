@@ -63,12 +63,9 @@ class ChzzkAgent:
             for node, value in chunk.items():
                 if node:
                     self._logger.debug(f"====[{node}]====")
+                    self._logger.debug(f"-->\n{value}")
                 if "messages" in value:
                     self._logger.debug(value["messages"])
-                if {"question", "answer"}.issubset(value):
-                    self._logger.debug(
-                        f"질문: {value['question']}\n답변: {value['answer']}"
-                    )
 
 
     def build_graph(
@@ -137,17 +134,22 @@ class ChzzkAgent:
             """)
 
             prompt = prompt.partial(format=self._parser.get_format_instructions())
-            chain = prompt | self._llm | self._parser
+            chain = prompt | self._llm
 
-            llm_response: AgentResponse = chain.invoke(question)
-            
+            llm_response = chain.invoke(question)
+            structured_output: AgentResponse = self._parser.parse(llm_response.content)
+
             return {
-                "messages": [llm_response.model_dump_json()],
-                "question": question,
-                "answer": llm_response.answer,
-                "tool": llm_response.tool,
+                "messages": [llm_response],
+                "question": structured_output.question,
+                "answer": structured_output.answer,
+                "tool": structured_output.tool,
+                "error": "",
             }
         
+        elif state['error']:
+            pass
+
         elif AgentMode.LAST.value == state["tool"]:
             prompt = PromptTemplate.from_template("""
             You are an AI Agent.
@@ -204,14 +206,14 @@ class ChzzkAgent:
         """)
 
         prompt = prompt.partial(format=self._parser.get_format_instructions())
-        chain = prompt | self._llm | self._parser
+        chain = prompt | self._llm
         
-        llm_response: AgentResponse = chain.invoke(state["question"])
-        llm_response.tool = AgentMode.NONE.value
+        llm_response = chain.invoke(state["question"])
+        structured_output: AgentResponse = self._parser.parse(llm_response.content)
+        structured_output.tool = AgentMode.NONE.value
         
         try:
-            query: str = llm_response.answer
-
+            query: str = structured_output.answer
             conn = psycopg2.connect(**self._db_config)
 
             cursor = conn.cursor()
@@ -220,7 +222,7 @@ class ChzzkAgent:
 
             pd_df: pd.DataFrame = pd.DataFrame(
                 data=db_results,
-                columns=list(ChatLogTableSchemas.model_fields.keys())
+                # columns=list(ChatLogTableSchemas.model_fields.keys())
             )
             
         except Exception as e:
@@ -233,7 +235,8 @@ class ChzzkAgent:
             conn.close()
 
         return {
-            "messages": [llm_response.model_dump_json()],
+            "messages": [llm_response],
             "answer": pd_df.to_string(),
-            "tool": AgentMode.LAST.value
+            "tool": AgentMode.LAST.value,
+            "error": "",
         }

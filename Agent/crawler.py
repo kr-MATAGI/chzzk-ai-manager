@@ -165,7 +165,7 @@ class ChatCrawler:
             )
 
         except Exception as e:
-            self._logger.debug(f"Error: {e or e.__class__.__name__}")  
+            self._logger.error(f"Error: {e or e.__class__.__name__}")  
         
         return user_info
 
@@ -196,44 +196,53 @@ class ChatCrawler:
         # live_chatting_list_wrapper__a5XTV
         chatting_list_wrapper: WebElement = self.driver.find_element(
             By.XPATH,
-            "//div[contains(@class, 'live_chatting_list_wrapper')]"
+            "//div[starts-with(@class, 'live_chatting_list_wrapper')]"
         )
         self._logger.debug(f"Chatting list wrapper: {True if chatting_list_wrapper else False}")
 
         # Get chatting after open browser
         chat_list_items: List[WebElement] = chatting_list_wrapper.find_elements(
             By.XPATH, 
-            ".//div[contains(@class, 'live_chatting_list_item')]"
+            ".//div[starts-with(@class, 'live_chatting_list_item')]"
         )
-        self._logger.debug(f"First Chat Size: {len(chat_list_items)}")
+        self._logger.debug(f"Chat Size: {len(chat_list_items)}")
         
         for chat_item in chat_list_items:
             # @TODO: 후원 채팅은 유저는 검색이 됨 '익명의 후원자', 내용과 금액은 다른 Elem 사용하는 것으로 보임
+            # live_chatting_message_container__vrI-y
             # name_ellipsis__Hu9B+->name_text__yQG50, live_chatting_message_text__DyleH
             
             try:
-                user_nick_name_elem: WebElement = chat_item.find_element(
+                user_nick_name_elem = None
+                user_chat_elem = None
+
+                live_chat_msg_container: List[WebElement] = chat_item.find_elements(
                     By.XPATH,
-                    ".//span[contains(@class, 'name_text')]"
-                )
-                user_chat_elem: WebElement = chat_item.find_element(
-                    By.XPATH,
-                    ".//span[contains(@class, 'live_chatting_message_text')]"
+                    ".//div[starts-with(@class, 'live_chatting_message_container')]"
                 )
 
-                if user_nick_name_elem.text in chat_log_history.keys():
-                    chat_log_history[user_nick_name_elem.text.strip()].append({
-                        "content": user_chat_elem.text.strip(),
-                        "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
-                    })
-                else:
-                    chat_log_history[user_nick_name_elem.text.strip()] = [{
-                        "content": user_chat_elem.text.strip(),
-                        "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
-                    }]
+                for msg_item in live_chat_msg_container:
+                    user_nick_name_elem: WebElement = msg_item.find_element(
+                        By.XPATH,
+                        ".//span[starts-with(@class, 'name_text')]"
+                    )
+                    user_chat_elem: WebElement = msg_item.find_element(
+                        By.XPATH,
+                        ".//span[starts-with(@class, 'live_chatting_message_text')]"
+                    )
+
+                    if user_nick_name_elem.text in chat_log_history.keys():
+                        chat_log_history[user_nick_name_elem.text.strip()].append({
+                            "content": user_chat_elem.text.strip(),
+                            "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
+                        })
+                    else:
+                        chat_log_history[user_nick_name_elem.text.strip()] = [{
+                            "content": user_chat_elem.text.strip(),
+                            "added_time": datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
+                        }]
 
             except Exception as e:
-                if user_nick_name_elem:
-                    self._logger.error(f"User: {user_nick_name_elem.text.strip()}, {e}")
+                self._logger.error(f"{user_nick_name_elem} <-> {user_chat_elem}, {e}")
 
         return chat_log_history
