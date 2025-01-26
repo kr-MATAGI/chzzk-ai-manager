@@ -23,6 +23,9 @@ psycopg2-binary = "^2.9.10"
 aioredis = "^2.0.1"
 redis = "^5.2.1"
 asyncpg = "^0.30.0"
+psycopg = {extras = ["pool"], version = "^3.2.4"}
+langgraph-checkpoint-postgres = "^2.0.13"
+pandas = "^2.2.3"
 
 
 [build-system]
