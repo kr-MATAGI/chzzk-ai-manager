@@ -177,7 +177,7 @@ class ChatCrawler:
         content: Dict = searched_user_info["content"]
         for data_item in content["data"]:
             channel_info: Dict = data_item["channel"]
-            if channel_info["channelName"] == target_username:
+            if channel_info["channelName"].strip() == target_username.strip():
                 channel_name = channel_info["channelName"]
                 channel_id = channel_info["channelId"]
                 return {
