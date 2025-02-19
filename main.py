@@ -9,11 +9,11 @@ from Agent.crawler import ChatCrawler
 async def main():
     load_dotenv()
 
-    # agent = ChzzkAgent(llm_model="gpt-4o")
-    # agent.build_graph()
+    agent = ChzzkAgent(llm_model="gpt-4o")
+    agent.build_graph()
     # # agent.show_graph()
 
-    # answer = agent.invoke_graph(question="탬탬버린 방송의 채팅에서 가장 많은 채팅을 한 사람은?")
+    answer = agent.invoke_graph(question="탬탬버린 방송의 채팅에서 가장 많은 채팅을 한 사람은?")
 
     chat = ChatCrawler()
     await chat.connection()

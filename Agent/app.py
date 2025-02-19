@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import requests
+import urllib
 from dotenv import load_dotenv
 from typing import Dict, List, Any
 from enum import StrEnum
@@ -25,6 +27,7 @@ class AgentMode(StrEnum):
     NONE = "none"
     NORMAL = "normal"
     DB = "db"
+    NAMU = "namu"
     LAST = "last"
 
 class ChzzkAgent:
@@ -87,8 +90,9 @@ class ChzzkAgent:
             self._logger.error(f"{e.__class__.__name__}: {e}")
 
         # Make Node
-        self._graph_flow.add_node("agent", self._agent_call)
-        self._graph_flow.add_node("db_node", self._query_search_node)
+        self._graph_flow.add_node("agent", self._agent_call) # 답변 및 구분
+        self._graph_flow.add_node("db_node", self._query_search_node) # DB 검색
+        self._graph_flow.add_node("namuwiki", self._namuwiki_search_node) # 나무위키 검색
 
         # Make Edge
         self._graph_flow.add_edge(START, "agent")
@@ -99,10 +103,13 @@ class ChzzkAgent:
             {
                 AgentMode.NORMAL.value: END,
                 AgentMode.DB.value: "db_node",
+                AgentMode.NAMU.value: "namuwiki",
             }
         )
 
+        # END
         self._graph_flow.add_edge("db_node", "agent")
+        self._graph_flow.add_edge("namuwiki", "agent")
         self._graph_flow.add_edge("agent", END)
         
         # Build Graph
@@ -126,6 +133,7 @@ class ChzzkAgent:
             Respond to the user's question, considering the possibility of using the following tools when necessary:
             <Tool Types>
             - DB: If data retrieval is required, make use of the this.
+            - NAMU: If a request is made to search for a specific person(or streamer). Answe
             - NORMAL: Organize responses to general user questions or answers to search results.
 
             User Input: {question}
@@ -143,6 +151,7 @@ class ChzzkAgent:
                 "messages": [llm_response],
                 "question": structured_output.question,
                 "answer": structured_output.answer,
+                "search_target": structured_output.search_target,
                 "tool": structured_output.tool,
                 "error": "",
             }
@@ -183,6 +192,8 @@ class ChzzkAgent:
     ) -> BasicState:
         if state["tool"].lower() == AgentMode.DB.value:
             return AgentMode.DB.value
+        elif state["tool"].lower() == AgentMode.NAMU.value:
+            return AgentMode.NAMU.value
         else:
             return AgentMode.NORMAL.value
 
@@ -191,7 +202,7 @@ class ChzzkAgent:
         self,
         state: BasicState
     ) -> BasicState:
-        prompt: str = PromptTemplate.from_template("""
+        prompt: PromptTemplate = PromptTemplate.from_template("""
         You are an expert SQL assistant. Generate a valid SQL query based on the user's input.
         Ensure the query is safe and assumes a table named 'tbl_chat_log' with the following columns:
         - idx (integer): A unique identifier for each record.
@@ -240,3 +251,57 @@ class ChzzkAgent:
             "tool": AgentMode.LAST.value,
             "error": "",
         }
+    
+
+    def _namuwiki_search_node(
+        self,
+        state: BasicState
+    ):
+        target_user: str = state["search_target"]
+        target_user = urllib.parse.quote(target_user)
+        try:
+            namu_doc: str = requests.get(url=f"https://namu.wiki/w/{target_user}")
+            namu_doc = namu_doc.text[:2000] # 데이터 추가 가공 필요
+
+            prompt: PromptTemplate = PromptTemplate.from_template("""
+            You are an advanced AI assistant specializing in extracting precise answers from Namuwiki articles.  
+            You will be given a passage from Namuwiki that contains relevant information regarding a user's question.  
+
+            ## **Instructions:**
+            1. Carefully analyze the provided Namuwiki passage.
+            2. Identify the key information that directly answers the user's question.
+            3. If multiple relevant parts exist, synthesize them into a clear and concise response.
+            4. Ensure that the response is **written in fluent and natural Korean** with proper grammar and formatting.
+            5. Do NOT provide unnecessary explanations, metadata, or unrelated information.  
+
+            ## **User Input and Namuwiki Passage**
+            - User Question: {question}
+            - Namuwiki Passage: {document}
+
+            ## **Response Format (Korean Output)**
+            - Format: {format}
+            """)
+
+            prompt = prompt.partial(format=self._parser.get_format_instructions())
+
+            chain = prompt | self._llm
+            llm_response = chain.invoke({
+                "question": state["question"],
+                "document": namu_doc,
+            })
+
+            structured_output: AgentResponse = self._parser.parse(llm_response.content)
+            structured_output.tool = AgentMode.NONE.value
+            print(structured_output)
+
+            return {
+                "messages": [llm_response],
+                "answer": structured_output.answer,
+                "tool": AgentMode.LAST.value,
+                "error": "",
+            }
+
+        except Exception as e:
+            return {
+                "error": AgentMode.NAMU.value
+            }

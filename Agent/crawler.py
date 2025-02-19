@@ -3,6 +3,7 @@ import random
 import time
 import os
 import uuid
+import urllib
 from typing import Any, List, Dict
 from datetime import datetime
 from dotenv import load_dotenv
@@ -19,8 +20,6 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from webdriver_manager.chrome import ChromeDriverManager
-
-import urllib.parse
 
 
 class ChatCrawler:

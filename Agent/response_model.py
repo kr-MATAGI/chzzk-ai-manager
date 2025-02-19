@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 class AgentResponse(BaseModel):
     question: str = Field(description="User input")
     answer: str = Field(description="AI Agent's response")
+    search_target: str = Field(description="The extracted result of the main subject in a Namuwiki search tool query.")
     tool: str = Field(description="The name of the tool to be used")
 
 
