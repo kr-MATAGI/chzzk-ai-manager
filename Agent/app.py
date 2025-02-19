@@ -93,6 +93,7 @@ class ChzzkAgent:
         self._graph_flow.add_node("agent", self._agent_call) # 답변 및 구분
         self._graph_flow.add_node("db_node", self._query_search_node) # DB 검색
         self._graph_flow.add_node("namuwiki", self._namuwiki_search_node) # 나무위키 검색
+        self._graph_flow.add_node("tool_evaluator", self._result_evaluator) # 도구 결과에 대한 평가
 
         # Make Edge
         self._graph_flow.add_edge(START, "agent")
@@ -107,9 +108,21 @@ class ChzzkAgent:
             }
         )
 
+        # Eval
+        self._graph_flow.add_edge("db_node", "tool_evaluator")
+        self._graph_flow.add_edge("namuwiki", "tool_evaluator")
+
+        self._graph_flow.add_conditional_edges(
+            "tool_evaluator",
+            self._need_retry_by_tool,
+            {
+                AgentMode.DB: "db_node",
+                AgentMode.NAMU: "namuwiki",
+                AgentMode.LAST: "agent",
+            }
+        )
+
         # END
-        self._graph_flow.add_edge("db_node", "agent")
-        self._graph_flow.add_edge("namuwiki", "agent")
         self._graph_flow.add_edge("agent", END)
         
         # Build Graph
@@ -292,7 +305,6 @@ class ChzzkAgent:
 
             structured_output: AgentResponse = self._parser.parse(llm_response.content)
             structured_output.tool = AgentMode.NONE.value
-            print(structured_output)
 
             return {
                 "messages": [llm_response],
@@ -305,3 +317,23 @@ class ChzzkAgent:
             return {
                 "error": AgentMode.NAMU.value
             }
+
+
+    def _result_evaluator(
+        self,
+        state: BasicState
+    ):
+        """
+            질문을 더 다듬는 역할 진행
+        """
+        return state
+
+    
+    def _need_retry_by_tool(
+        self,
+        state: BasicState
+    ):
+        """
+            Retry 판단 기준은?
+        """
+        return state
